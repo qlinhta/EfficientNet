@@ -55,11 +55,11 @@ class SqueezeExcite(nn.Module):
     def __init__(self, in_channels, reduced_dim):
         super(SqueezeExcite, self).__init__()
         self.se = nn.Sequential(
-            nn.AdaptiveAvgPool2d(1), # or GlobalAvgPool2d, C x H x W -> C x 1 x 1
+            nn.AdaptiveAvgPool2d(1),  # or GlobalAvgPool2d, C x H x W -> C x 1 x 1
             nn.Conv2d(in_channels, reduced_dim, kernel_size=1),
             nn.SiLU(),
             nn.Conv2d(reduced_dim, in_channels, kernel_size=1),
-            nn.Sigmoid(), # or nn.Softmax(dim=1) for multiclass tasks
+            nn.Sigmoid(),  # or nn.Softmax(dim=1) for multiclass tasks
         )
 
     def forward(self, x):
@@ -67,30 +67,27 @@ class SqueezeExcite(nn.Module):
 
 
 class InvertedResidualBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, stride, padding, expand_ratio):
+    def __init__(self, in_channels, out_channels, kernel_size, stride, padding, expand_ratio, reduction=4,
+                 survival_prob=0.8):
         super(InvertedResidualBlock, self).__init__()
-        self.use_res_connect = stride == 1 and in_channels == out_channels
-
+        self.survival_prob = survival_prob
+        self.use_residual = in_channels == out_channels and stride == 1
         hidden_dim = in_channels * expand_ratio
         self.expand = in_channels != hidden_dim
+        reduced_dim = int(in_channels / reduction)
+
         if self.expand:
-            self.expand_conv = CNNBlock(
-                in_channels, hidden_dim, kernel_size=3, stride=1, padding=1
-            )
+            self.expand_conv = CNNBlock(in_channels, hidden_dim, kernel_size=3, stride=1, padding=1)
 
         self.conv = nn.Sequential(
-            CNNBlock(
-                hidden_dim, hidden_dim, kernel_size, stride, padding, groups=hidden_dim
-            ),
-            SqueezeExcite(),
+            CNNBlock(hidden_dim, hidden_dim, kernel_size, stride, padding, groups=hidden_dim),
+            SqueezeExcite(hidden_dim, reduced_dim),
             nn.Conv2d(hidden_dim, out_channels, kernel_size=1, stride=1, padding=0, bias=False),
             nn.BatchNorm2d(out_channels, momentum=0.01, eps=1e-3),
         )
 
-    def forward(self, x):
-        if self.expand:
-            x = self.expand_conv(x)
-        x = self.conv(x)
-        if self.use_res_connect:
-            return x + x
-        return x
+    def stochastic_depth(self, x):
+        if not self.training:
+            return x
+        binary_tensor = torch.rand(x.shape[0], 1, 1, 1, device=x.device) < self.survival_prob
+        return torch.div(x, self.survival_prob) * binary_tensor
