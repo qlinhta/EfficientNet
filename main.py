@@ -154,7 +154,7 @@ def test():
     NUMBER_EXAMPLES, NUMBER_CLASSES = 4, 10
     x = torch.randn((NUMBER_EXAMPLES, 3, res, res)).to(device)
     model = EfficientNet(version=version, num_classes=NUMBER_CLASSES).to(device)
-    print(model(x.to(device)).shape)
+    print(model(x.to(device)).shape) # (NUMBER_EXAMPLES, NUMBER_CLASSES)
 
 
 if __name__ == "__main__":
