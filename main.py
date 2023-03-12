@@ -112,7 +112,7 @@ class EfficientNet(nn.Module):
             nn.Linear(last_channels, num_classes),
         )
 
-    def calculate_factors(self, version, alpha=1.2, beta=1.1):
+    def calculate_factors(self, version, alpha=1.2, beta=1.1):  # alpha = 1.2 as by paper
         phi, res, drop_rate = phi_values[version]
         depth_factor = alpha ** phi
         width_factor = beta ** phi
@@ -145,3 +145,17 @@ class EfficientNet(nn.Module):
     def forward(self, x):
         x = self.pool(self.features(x))
         return self.classifier(x.view(x.shape[0], -1))
+
+
+def test():
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    version = "b0"
+    phi, res, droprate = phi_values[version]
+    NUMBER_EXAMPLES, NUMBER_CLASSES = 4, 10
+    x = torch.randn((NUMBER_EXAMPLES, 3, res, res)).to(device)
+    model = EfficientNet(version=version, num_classes=NUMBER_CLASSES).to(device)
+    print(model(x.to(device)).shape)
+
+
+if __name__ == "__main__":
+    test()
