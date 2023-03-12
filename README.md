@@ -11,9 +11,10 @@ The implementation is done using PyTorch.
 
 ## Requirements
 
-- Python 3.6 or above
-- PyTorch 1.7 or above
-- torchvision 0.8 or above
+The code is written in Python 3.6:
+```bash
+pip install -r requirements.txt
+```
 
 ## EfficientNet Architecture
 
