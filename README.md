@@ -25,6 +25,8 @@ computation cost of the network. The architecture consists of several building b
 - Squeeze-and-Excitation (SE) Block
 - Inverted Residual Block
 
+![Structure](images/structures.png)
+
 The EfficientNet architecture is defined by a set of hyperparameters, including the width factor, depth factor, and
 dropout rate. These hyperparameters are used to scale the architecture to different levels of computational efficiency
 and accuracy.
